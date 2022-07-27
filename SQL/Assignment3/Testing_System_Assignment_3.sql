@@ -258,27 +258,7 @@ VALUES 					(1,			1),
         SET    AccountID = 5
 		WHERE  GroupID = 4; 
       
-       -- Viết lệnh để lấy ra danh sách các phòng ban có > 3 nhân viên
-        Select a.DepartmentID, d.DepartmentName, COUNT(1) AS SL From `account` a
-        INNER JOIN Department d ON d.DepartmentID = a.DepartmentID
-        GROUP BY a.DepartmentID
-        HAVING COUNT(1) >3; 
-        -- Viết lệnh để lâý ra danh sách câu hỏi được sử dụng trong để thi nhiều nhất 
-
-        WITH CTE_Count AS (
-        SELECT COUNT(1) AS SL FROM examquestion
-        GROUP BY QuestionID
-        )
-        SELECT eq.QuestionID, q.Content, COUNT(1) FROM examquestion eq
-        INNER JOIN question q ON q.QuestionID = eq.QuestionID 
-        GROUP BY eq.QuestionID
-        HAVING COUNT(1) = (SELECT MAX(SL) FROM CTE_Count);
-        
-        -- Tìm chức vụ có ít người nhất 
-        SELECT a.PositionID,p.PositionName, COUNT(a.PositionID) FROM `account` a
-        INNER JOIN Position p ON p.PositionID = a.PositionID
-        GROUP BY a.PositionID
-        HAVING COUNT(1) = (SELECT min(SL) FROM (SELECT COUNT(a1.PositionID) AS SL FROM `account` a1 GROUP BY a1.PositionID) AS tmp_1); 
+	
         
         
 	
