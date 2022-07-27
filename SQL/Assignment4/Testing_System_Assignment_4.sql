@@ -43,7 +43,7 @@ CREATE TABLE 			`Group`(
 DROP TABLE IF EXISTS 	`GroupAccount`;
 CREATE TABLE 			`GroupAccount` (
 	GroupID 	TINYINT UNSIGNED NOT NULL,
-	AccountID 	TINYINT UNSIGNED NOT NULL,
+	AccountID 	TINYINT UNSIGNED NOT NULL ,
 	JoinDate 	DATETIME DEFAULT NOW(),
     PRIMARY KEY (GroupID,AccountID),
     FOREIGN KEY(AccountID) REFERENCES `Account`(AccountID),
@@ -142,6 +142,7 @@ VALUES						(1,				1),
                             (3,				3),
                             (4,				2);
                             
+                            
 INSERT INTO TypeQuestion (TypeName)
 VALUES					('Essay'),
 					('Multiple-Choice' );
@@ -183,107 +184,113 @@ VALUES 					(1,			1),
                         (2,			4),
                         (3,			2),
                         (4,			2);
-                        
--- QUESTION 1: Thêm ít nhất 10 record vào mỗi table 
--- QUESTION 2: Lấy ra tất cả phòng ban
-		SELECT DepartmentID 
-        FROM Department;
--- QUESTION 3: Lấy ra id của phòng ban 'Sale' 
-		SELECT DepartmentID 
-        FROM Department 
-        WHERE DepartmentName = 'Sale'; 
--- QUESTION 4: Lấy ra thông tin account có full name dài nhất
-		-- Sub Query: Câu lệnh truy vấn con  
-        SELECT * 
-        FROM `account` 
-        WHERE LENGTH(Fullname)= (SELECT MAX(LENGTH(Fullname)) FROM `account`);
-		
--- QUESTION 5: Lấy ra thông tin account có full name dài nhất và thuộc phòng ban có id = 3
-		-- Cách 1: Sub query  
-        SELECT * 
-        FROM ( SELECT * FROM `account` WHERE DepartmentID =3) AS tmp_departmentID3
-        WHERE length(Fullname) = (SELECT MAX(length(fullname)) FROM ( SELECT * FROM `account` WHERE DepartmentID =3) AS tmp_departmentID3);
-        -- Cách 2: CTE: Tạo ra 1 bảng dữ liệu tạm, bảng dữ liệu này chỉ được dùng trong câu truy vấn hiện tại 
-		WITH CTE_AccountDepID3 AS (
-        SELECT * 
-        FROM `account` 
-        WHERE DepartmentID =3
-        )
-        SELECT * 
-        FROM CTE_AccountDepID3 
-        WHERE length(Fullname) = (SELECT max(length(Fullname)) FROM CTE_AccountDepID3); 
+        --   Exercise1: JOIN               
+        -- Question 1: Viết lệnh để lấy ra danh sách nhân viên và thông tin phòng ban của họ 
         
--- QUESTION 6: Lấy ra tên group đã tham gia trước ngày 20/12/2019
-		SELECT GroupName 
-        FROM `Group` 
-        WHERE Createdate < '2019-12-20' ;
+			SELECT a.Email, a.Username, a.Fullname, q.DepartmentName 
+            FROM `account` a
+            INNER JOIN Department q ON a.DepartmentID = q.DepartmentID;
+            
+		-- Question 2: Viết lệnh để lấy ra thông tin các account được tạo sau ngày 20/12/2010
+        
+			SELECT * FROM `account` WHERE CreateDate > '2010-12-20';
+            
+		-- Question 3: Viết lệnh để lấy ra tất cả các developer
+        
+			SELECT a.Email, a.UserName, a.Fullname, q.PositionName FROM `account` a
+            INNER JOIN Position q ON a.PositionID = q.PositionID
+            WHERE a.PositionID = 1; 
+            
+		-- Question 4: Viết lệnh để lấy ra danh sách các phòng ban có >3 nhân viên
+        
+			Select a.DepartmentID, d.DepartmentName, COUNT(1) AS SL From `account` a
+			INNER JOIN Department d ON d.DepartmentID = a.DepartmentID
+			GROUP BY a.DepartmentID
+			HAVING COUNT(1) >3; 
+        
+        -- Question 5: Viết lệnh để lấy ra danh sách câu hỏi được sử dụng trong đề thi nhiều nhất
 
--- QUESTION 7: Lấy ra ID của question có >=4 câu trả lời
-		SELECT a.QuestionID, q.content, COUNT(a.QuestionID)
-        FROM answer a 
-        INNER JOIN question q ON a.QuestionID = q.QuestionID
-        GROUP BY a.QuestionID 
-        HAVING COUNT(a.QuestionID) >=4;
+			WITH CTE_Count AS (
+			SELECT COUNT(1) AS SL FROM examquestion
+			GROUP BY QuestionID
+			)
+			SELECT eq.QuestionID, q.Content, COUNT(1) FROM examquestion eq
+			INNER JOIN question q ON q.QuestionID = eq.QuestionID 
+			GROUP BY eq.QuestionID
+			HAVING COUNT(1) = (SELECT MAX(SL) FROM CTE_Count);
         
--- QUESTION 8: Lấy ra các mã đề thi có thời gian thi >= 60 phút và được tạo trước ngày 20/12/2019
-		SELECT `Code` 
-        FROM Exam 
-        WHERE Duration >= 60 
-        AND Createdate < '2019-12-20' ; 
--- QUESTION 9: Lấy ra 5 group được tạo gần đây nhất
-		SELECT * FROM `Group` LIMIT 5;
--- QUESTION 10: Đếm số nhân viên thuộc department có id = 2
-		SELECT COUNT(AccountID) 
-        FROM `Account` 
-        WHERE DepartmentID = 2; 
--- QUESTION 11: Lấy ra nhân viên có tên bắt đầu bằng chữ "D" và kết thúc bằng chữ "o"
-		-- substring_index: Lấy ra 1 chuỗi con từ chuỗi ban đầu
-        -- substring_index('chuỗi, ký tự phân chia, vị trí cần lấy) 
-		SELECT * FROM `Account` WHERE substring_index(Fullname,' ',-1) LIKE 'D%y' ;
-        -- substring_index: Lấy ra 1 chuỗi con từ chuỗi ban đầu
-        -- substring_index('chuỗi, ký tự phân chia, vị trí cần lấy) 
+        -- Question 6: Thống kê mỗi category Question được sử dụng trong bao nhiêu Question
         
--- QUESTION 12: Xóa tất cả các exam được tạo trước ngày 20/12/2019
-		DELETE FROM EXAM WHERE CreateDate < '2019-12-20'; 
--- QUESTION 13: Xóa tất cả các question có nội dung bắt đầu bằng từ "câu hỏi"
-		DELETE FROM Question WHERE Substring_index (Content, ' ' , 2) = 'Câu hỏi' ;
+			SELECT a.CategoryID, d.CategoryName, COUNT(1) SL FROM Question a
+            INNER JOIN CategoryQuestion d ON a.CategoryID = d.CategoryID
+            GROUP BY a.CategoryID; 
+            
+		-- Question 7: Thông kê mỗi Question được sử dụng trong bao nhiêu Exam
         
--- QUESTION 14: Update thông tin của account có id = 5 thành tên "Nguyễn Bá Lộc" và email thành loc.nguyenba@vti.com.vn
-		UPDATE `account` 
-        SET 	Fullname = 'Nguyễn Bá Lộc',
-				Email 	 = ' loc.nguyenba@vti.com.vn ' 
-        WHERE 	AccountID = 5; 
--- QUESTION 15: update account có id = 5 sẽ thuộc group có id = 4
-		UPDATE GroupAccount
-        SET    AccountID = 5
-		WHERE  GroupID = 4; 
-      
-       -- Viết lệnh để lấy ra danh sách các phòng ban có > 3 nhân viên
-        Select a.DepartmentID, d.DepartmentName, COUNT(1) AS SL From `account` a
-        INNER JOIN Department d ON d.DepartmentID = a.DepartmentID
-        GROUP BY a.DepartmentID
-        HAVING COUNT(1) >3; 
-        -- Viết lệnh để lâý ra danh sách câu hỏi được sử dụng trong để thi nhiều nhất 
-
-        WITH CTE_Count AS (
-        SELECT COUNT(1) AS SL FROM examquestion
-        GROUP BY QuestionID
-        )
-        SELECT eq.QuestionID, q.Content, COUNT(1) FROM examquestion eq
-        INNER JOIN question q ON q.QuestionID = eq.QuestionID 
-        GROUP BY eq.QuestionID
-        HAVING COUNT(1) = (SELECT MAX(SL) FROM CTE_Count);
+			Select a.QuestionID, d.Content, COUNT(1) SL FROM Examquestion a
+            INNER JOIN Question d ON a.QuestionID = d.QuestionID
+            GROUP BY QuestionID;
+            
+		-- Question 8: Lấy ra Question có nhiều câu trả lời nhất
         
-        -- Tìm chức vụ có ít người nhất 
-        SELECT a.PositionID,p.PositionName, COUNT(a.PositionID) FROM `account` a
-        INNER JOIN Position p ON p.PositionID = a.PositionID
-        GROUP BY a.PositionID
-        HAVING COUNT(1) = (SELECT min(SL) FROM (SELECT COUNT(a1.PositionID) AS SL FROM `account` a1 GROUP BY a1.PositionID) AS tmp_1); 
+            WITH CTE_Count AS( 
+            SELECT COUNT(1) SL FROM Answer GROUP BY QuestionID
+            )
+            SELECT a.QuestionID,d.Content, COUNT(1) SL FROM Answer a
+            INNER JOIN Question d ON a.QuestionID = d.QuestionID 
+            GROUP BY a.QuestionID
+            HAVING COUNT(1) = (SELECT MAX(SL) FROM CTE_Count)  ;
+            
+		-- Question 9: Thống kê số lượng account trong mỗi group
+			
+            SELECT a.GroupID, d.GroupName, COUNT(1) SL FROM GroupAccount a
+            INNER JOIN `Group` d ON a.GroupID = d.GroupID
+            GROUP BY a.GroupID;
+            
+		-- Question 10: Tìm chức vụ có ít người nhất
+			
+        -- Cách 1: Sub query
+        
+			SELECT a.PositionID,p.PositionName, COUNT(a.PositionID) FROM `account` a
+			INNER JOIN Position p ON p.PositionID = a.PositionID
+			GROUP BY a.PositionID
+			HAVING COUNT(1) = (SELECT min(SL) FROM (SELECT COUNT(a1.PositionID) AS SL FROM `account` a1 GROUP BY a1.PositionID) AS tmp_1); 
+        
+        -- Cách 2: CTE 
+			WITH CTE_Count AS(
+            SELECT COUNT(1) AS SL FROM `account`
+            GROUP BY PositionID
+            )
+			SELECT a.PositionID, d.PositionName, COUNT(1) SL FROM `account` a
+            INNER JOIN Position d ON a.PositionID = d.PositionID
+            GROUP BY PositionID
+            HAVING COUNT(1) = (SELECT MIN(SL) FROM CTE_Count) ;
+        
+        -- Question 11: Thống kê mỗi phòng ban có bao nhiêu dev, test, scrum master, PM
+			
+        
+		-- Question 12: Lấy thông tin chi tiết của câu hỏi bao gồm: thông tin cơ bản của question, loại câu hỏi, ai là người tạo ra câu hỏi, câu trả lời là gì, …
+        
+			SELECT a.QuestionID, a.Content, d.CategoryName, e.Username, f.Content FROM question a
+			INNER JOIN CategoryQuestion d ON a.CategoryID = d.CategoryID
+			INNER JOIN `Account` e ON e.AccountID = a.CreatorID 
+			INNER JOIN Answer f ON f.QuestionID = a.QuestionID ;
+        
+        -- Question13: Lấy ra số lượng câu hỏi của mỗi loại tự luận hay trắc nghiệm
+        
+			SELECT a.TypeID, d.TypeName, COUNT(1) SL FROM question a
+			INNER JOIN TypeQuestion d ON a.TypeID = d.TypeID
+			GROUP BY TypeID;
+        
+        -- Question 15: Lấy ra group không có account nào
+        
+        -- Question 16: Lấy ra question không có answer nào 
+        
         
         
 	
  
-                        
+                         
                         
                         
                         
